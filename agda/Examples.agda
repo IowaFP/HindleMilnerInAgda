@@ -41,16 +41,16 @@ _ = refl
 -- -- let polymorphic terms.
 
 -- λ x. x
---   (let
---     f := λ x. x
---   In (f · (λ x. x)) (f tt))
+--   (let id := λ x. x In ((f (λ x. x)) (f tt)))
+--     
+--       
 M : Expr 
 M = `λ "x" ．
    (` "x" ·
     (Let
-      "f" := (`λ "x" ． ` "x")
+      "id" := (`λ "x" ． ` "x")
         In
-          (((` "f") · (`λ "x" ． ` "x")) · ((` "f") · tt))))
+          ((` "id" · (`λ "x" ． ` "x")) · (` "id" · tt))))
 
 _ : show (mgt M) ≡ "∀ {b} ((⊤ → b) → b)"
 _ = refl 
