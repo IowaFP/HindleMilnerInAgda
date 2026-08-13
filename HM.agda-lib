@@ -1,0 +1,7 @@
+name: HM
+depend: standard-library
+include : ./agda
+
+flags:
+  --allow-unsolved-metas
+
