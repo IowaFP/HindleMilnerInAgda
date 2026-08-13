@@ -1,7 +1,9 @@
 module Syntax where
 
 open import Prelude
-open AList ℕ _≟_
+open import Data.List.Membership.DecPropositional _≟_ using (_∉?_ ) public 
+open AList String _≟_
+
 
 --------------------------------------------------------------------------------
 -- Syntax for implementation of Algorithm 𝒲 and Algorithm ℳ, following Lee and
@@ -10,27 +12,21 @@ open AList ℕ _≟_
 --
 --------------------------------------------------------------------------------
 -- Variable Representation & substitution.
---
--- N.B.
---  - We use a named representation of variables -- even if those names come from
---    ℕ. So this is *not* DeBruijn. For example, the lambda term
---        λ 3. λ 4. 3 4
---    is α-equivalent to
---        λ x. λ y. x y.
---    This makes implementation easiest, but likely would need to be changed to
---    either DeBruijn or Locally Nameless (see Charguéraud (2012)) before
---    formalizing any metatheory. I personally would recommend locally nameless,
---    as we require freshness and decidable equality of variable representation
---    -- precisely what is necessary for LN.
+-- We used a named representation.
 
-Var = ℕ
+Var = String
 Vars = List Var
 
 --------------------------------------------------------------------------------
 -- Syntax
 --
--- N.B.
---   - We omit recursive functions for simplicity.
+-- TODO:
+--   - Refactor from ℕ vars to String vars
+--   - Add recursive functions / LFP operator.
+--   - Add Inductive-recursive definition 
+--       _∉ₑ_ : Var → Expr → Set
+--       _∉ₑ_ : (x : Var) (e : Expr) → Dec (x ∉ₑ? Expr)
+--   - So that we can constrain `λ with {free : True (x ∉ₑ? Expr)}
 
 data Expr : Set where
   tt    : Expr
@@ -49,18 +45,13 @@ data Scheme : Set where
   `∀ : (T : Vars) → (τ : Type) → Scheme
 
 --------------------------------------------------------------------------------
--- Typing Assignments.
---
--- N.B.
---   - Typing assignments *look* the same as typing environments, but actually
---     map *type vars* to *type schemes*. An environment maps term vars to type
---     schemes.
+-- Typing Assignments map *type vars* to *type schemes*.
 
 TypeAss : Set
 TypeAss = AssocList Scheme
 
 --------------------------------------------------------------------------------
--- Substitutions.
+-- Substitutions map type vars to types.
 
 Subst : Set
 Subst = AssocList Type
@@ -100,7 +91,7 @@ ftv'Γ (α ↦ σ , Γ) = dedup (ftv σ ++ (ftv'Γ Γ))
 
 occurs : (α : Var) → (τ : Type) → Bool
 occurs α ⊤ = false
-occurs α (` β) = α ≡ᵇ β
+occurs α (` β) = α == β
 occurs α (τ₁ `→ τ₂) = (occurs α τ₁) ∨ (occurs α τ₂)
 
 
@@ -120,8 +111,9 @@ occurs α (τ₁ `→ τ₂) = (occurs α τ₁) ∨ (occurs α τ₂)
 -- with βᵢ fresh in αᵢ ∪ dom Γ for i ≥ 0.
 
 -- Produce fresh β from vars αᵢ.
+-- Unsafe if you run out of variables in the alphabet.
 fresh : Vars → Var
-fresh = suc ∘ (max 0)
+fresh vs = unsafeHead (alphabet ╲ vs)
 
 -- Produce the substitution [βᵢ/αᵢ] fresh βᵢ from vars αᵢ.
 freshen : Vars → Subst
@@ -132,38 +124,43 @@ freshen as = go as as
     go : Vars → Vars → Subst
     go [] all = ∅
     go (x ∷ xs) all = let β = fresh all in (x ↦ (` β) , (go xs (β ∷ all)))
+
 new : TypeAss → Type
 new Γ = ` (fresh (dom Γ))
 
 --------------------------------------------------------------------------------
 -- Substitution.
 
-sub : Subst → Scheme → Scheme
-sub't : Subst → Type → Type
+infixl 2 _[_]
+infixl 2 _[_]t
+_[_] : Scheme → Subst → Scheme
+_[_]t : Type → Subst → Type
 
-sub S (§ τ)     = § (sub't S τ)
-sub S (`∀ T τ) = `∀ T (sub't S τ)
+(§ τ) [ σ ]    = § (τ [ σ ]t)
+(`∀ T τ) [ σ ] = `∀ T (τ [ σ ]t)
 
-sub't S ⊤ = ⊤
-sub't S (` x) = S ∋[ x ] (` x)
-sub't S (τ `→ τ') = sub't S τ `→ sub't S τ'
+⊤ [ _ ]t = ⊤
+(` x) [ σ ]t = σ ∋[ x ] (` x)
+(τ `→ τ') [ σ ]t = (τ [ σ ]t) `→ (τ' [ σ ]t)
 
 -- --------------------------------------------------------------------------------
 -- Substitution over typing environments.
 
-sub'Γ : Subst → TypeAss → TypeAss
-sub'Γ S Γ = map (sub S) Γ
+_[_]Γ : TypeAss → Subst → TypeAss
+Γ [ σ ]Γ = map (_[ σ ]) Γ
 
 --------------------------------------------------------------------------------
+
 -- Substitution within a substitution, e.g.,
 --    β ↦ ζ ∘ (α ↦ (β → β))
 -- should yield the substitution
---    (β ↦ ζ , α ↦ (ζ → ζ))
--- i.e., we eagerly apply the substitution on the left.
+--    (α ↦ (ζ → ζ) , β ↦ ζ)
+-- AH> Why does σ₁ ∘ₛ ∅ = σ₁? Should it not yield ∅? 
 
-sub'S : Subst → Subst → Subst
-sub'S S₁ ∅ = S₁
-sub'S S₁ (α ↦ τ , S₂) = α ↦ sub't S₁ τ , sub'S S₁ S₂
+infixr 1 _∘ₛ_
+_∘ₛ_ : Subst → Subst → Subst
+σ₁ ∘ₛ ∅ = σ₁
+σ₁ ∘ₛ (α ↦ τ  , σ₂) = α ↦ τ [ σ₁ ]t , σ₁ ∘ₛ σ₂ 
 
 -- --------------------------------------------------------------------------------
 -- Generalization, a là Jones (1995) and Damas and Milner (1982).

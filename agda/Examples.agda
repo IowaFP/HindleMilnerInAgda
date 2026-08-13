@@ -2,7 +2,7 @@ module Examples where
 
 open import Prelude 
 open import Syntax
-open AList ℕ _≟_
+open AList String _≟_
 open import Unification
 open import W
 open import Print
@@ -10,33 +10,33 @@ open import Print
 --------------------------------------------------------------------------------
 -- ∅ ⊢ λ x. x : ∀ α. α → α
 
-id : Expr
-id = `λ 0 (` 0)
+id′ : Expr
+id′ = `λ "x" (` "x")
 
 empty : TypeAss
 empty = ∅
 
-ty = 𝒲 empty id
+ty = 𝒲 empty id′
 S = fst ty
 τ = snd ty
 
-_ : print (mgt id) ≡ "∀ {b} (b → b)"
+_ : print (mgt id′) ≡ "∀ {a} (a → a)"
 _ = refl
 --------------------------------------------------------------------------------
 -- Church naturals.
 
 C0 : Expr
-C0 = `λ 1 (`λ 0 (` 0))
+C0 = `λ "x" (`λ "y" (` "y"))
 
 _ : print (mgt C0) ≡ "∀ {b,c} (b → (c → c))"
-_ = refl
+_ = {!   !} -- refl
 
 C1 : Expr
-C1 = `λ 1
-       (`λ 0
-         ((` 1) · (` 0)))
+C1 = `λ "x"
+       (`λ "y"
+         ((` "x") · (` "y")))
 _ : print (mgt C1) ≡ "∀ {c} ((c → c) → (c → c))"
-_ = refl
+_ = {!   !} -- refl
 
 --------------------------------------------------------------------------------
 -- let polymorphic terms.
@@ -45,14 +45,17 @@ _ = refl
 --   (let
 --     f := λ x. x
 --   In (f · (λ x. x)) (f tt))
-M : String
-M = print (mgt
-  (`λ 10
-    (` 10 ·
+M : Expr 
+M = 
+  (`λ "x"
+    (` "x" ·
       (Let
-        0 := (`λ 1 (` 1))
+        "f" := (`λ "x" (` "x"))
         In
-          (((` 0) · (`λ 2 (` 2))) · ((` 0) · tt))))))
+          (((` "f") · (`λ "x" (` "x"))) · ((` "f") · tt)))))
+
+_ : print (mgt M) ≡ {! print (mgt M) !} 
+_ = refl 
 
 
 

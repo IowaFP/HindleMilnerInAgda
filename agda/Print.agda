@@ -13,12 +13,12 @@ lookup [] _ = nothing
 lookup (x ∷ xs) zero = just x
 lookup (x ∷ xs) (suc n) = lookup xs n
 
--- Really need to switch to De Bruijn
-chars = "a" ∷ "b" ∷ "c" ∷ "d" ∷ "e" ∷ "f" ∷ "g" ∷ "h" ∷ "i" ∷ "j" ∷ "k" ∷ "l" ∷ "m" ∷ "n" ∷ [] 
-name : Var → String
-name α with lookup chars α
-... | just n = n
-... | nothing = "pfft"
+name : Var → String 
+name = id 
+-- name : Var → String
+-- name α with lookup alphabet α
+-- ... | just n = n
+-- ... | nothing = "pfft"
 
 print : Scheme → String
 print't : Type → String

@@ -1,12 +1,18 @@
 module Prelude where 
+--------------------------------------------------------------------------------
+-- Levels 
+
+open import Agda.Primitive public
+
+--------------------------------------------------------------------------------
+-- Data 
 
 open import Data.Bool using (Bool ; true ; false ; _∨_ ) public 
-open import Data.String using (String) public 
+open import Data.String using (String ; _≟_ ; _==_) public 
 open import Data.Maybe using (Maybe ; nothing ; just) public
-open import Data.Nat using (ℕ ; zero ; suc ; _≟_ ; _≡ᵇ_) public 
-open import Data.List using (List ; filter ; deduplicate ; [] ; _∷_ ; _++_) public 
+open import Data.Nat using (ℕ ; zero ; suc) public 
+open import Data.List using (List ; head ; tail ; filter ; deduplicate ; [] ; _∷_ ; _++_) public 
 open import Data.List.Extrema.Nat using (max) public 
-open import Data.List.Membership.DecPropositional _≟_ using (_∉?_ ) public 
 -- open import Data.List.Membership.Propositional.Properties public 
 
 open import Data.Product
@@ -18,50 +24,39 @@ open import Data.Sum
   using (_⊎_)
   renaming (inj₁ to left ; inj₂ to right)
   public 
+--------------------------------------------------------------------------------
+-- Relation
 
 open import Relation.Binary.PropositionalEquality public 
-open import Function using (_∘_) public
+
+--------------------------------------------------------------------------------
+-- Function
+
+open import Function using (_∘_ ; id) public
+
+--------------------------------------------------------------------------------
+-- Ours 
 
 open import AssocList public 
 
+-- A list of chars for drawing fresh variable names. 
+alphabet = 
+    "a" ∷ "b" ∷ "c" ∷ "d" ∷ 
+    "e" ∷ "f" ∷ "g" ∷ "h" ∷ 
+    "i" ∷ "j" ∷ "k" ∷ "l" ∷ 
+    "m" ∷ "n" ∷ "o" ∷ "p" ∷ 
+    "q" ∷ "r" ∷ "s" ∷ "t" ∷
+    "u" ∷ "v" ∷ "w" ∷ "x" ∷ 
+    "y" ∷ "z" ∷ [] 
 
--- --------------------------------------------------------------------------------
--- -- Data 
+private variable
+  ℓ : Level 
+  A : Set ℓ 
 
--- open import Data.Bool using (Bool ; true ; false ; _∨_)public 
--- open import Data.String using (String) public  
--- open import Data.Nat public 
--- open import Data.List
---   hiding (or ; lookup ; _─_ ; any ; head ; tail) public 
--- open import Data.List.Extrema.Nat public 
--- open import Data.List.Relation.Unary.Any public 
---   hiding (map) public 
--- import Data.List.Membership.DecPropositional as Membership
--- open import Data.List.Membership.Propositional.Properties public 
--- open Membership _≟_ hiding (_∷=_ ; _─_ ; find) public 
+-- This is not a safe development
+postulate
+  undefined : A 
 
--- --------------------------------------------------------------------------------
--- -- Relation 
-
--- open import Relation.Binary.PropositionalEquality
---   hiding (subst)
-
--- open import Relation.Nullary
---   using (¬_; Dec; yes; no) public 
--- open import Relation.Nullary.Decidable
---   hiding (map) public 
--- open import Relation.Nullary.Negation
---   renaming (contraposition to contra) public 
-
--- open import Data.Product
---   renaming (proj₁ to fst ; proj₂ to snd)
---   hiding (map) public 
-  
--- open import Data.Sum
---   renaming (_⊎_ to _or_ ; inj₁ to left ; inj₂ to right)
---   hiding (map) public 
-
--- --------------------------------------------------------------------------------
--- -- Function 
-
--- open import Function public 
+unsafeHead : List A → A 
+unsafeHead [] = undefined
+unsafeHead (x ∷ xs) = x 

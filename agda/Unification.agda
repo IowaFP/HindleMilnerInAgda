@@ -2,7 +2,7 @@ module Unification where
 
 open import Prelude 
 open import Syntax
-open AList ℕ _≟_
+open AList String _≟_
 
 --------------------------------------------------------------------------------
 -- Unification (𝒰).
@@ -12,11 +12,11 @@ open AList ℕ _≟_
 𝒰 : Type → Type → Maybe Subst
 𝒰 (τ₁ `→ τ₂) (υ₁ `→ υ₂) with 𝒰 τ₁ υ₁
 ... | nothing = nothing
-... | just S₁ with 𝒰 (sub't S₁ τ₂) (sub't S₁ υ₂)
-...   | just S₂ = just (sub'S S₂ S₁)
+... | just σ₁ with 𝒰 (τ₂ [ σ₁ ]t) (υ₂ [ σ₁ ]t)
+...   | just σ₂ = just (σ₂ ∘ₛ σ₁)
 ...   | nothing = nothing
 𝒰 ⊤ ⊤ = just ∅
-𝒰 (` α) τ@(` β) with α ≡ᵇ β
+𝒰 (` α) τ@(` β) with α == β
 ... | true = just ∅
 ... | false = just [ α ↦ τ ]
 -- Don't think this is right ?
