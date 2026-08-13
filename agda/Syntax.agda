@@ -28,13 +28,16 @@ Vars = List Var
 --       _∉ₑ_ : (x : Var) (e : Expr) → Dec (x ∉ₑ? Expr)
 --   - So that we can constrain `λ with {free : True (x ∉ₑ? Expr)}
 
+infixr 5 _·_
+infixr 4 `λ_．_
 data Expr : Set where
   tt    : Expr
   `    : (x : Var) → Expr
-  `λ    : (x : Var) → (e : Expr) → Expr
+  `λ_．_    : (x : Var) → (e : Expr) → Expr
   _·_  : (e₁ : Expr) → (e₂ : Expr) → Expr
   Let_:=_In_ : (x : Var) → (e₁ : Expr) → (e₂ : Expr) → Expr
 
+infixr 5 _`→_
 data Type : Set where
   ⊤    : Type
   `    : (α : Var) → Type
@@ -45,10 +48,10 @@ data Scheme : Set where
   `∀ : (T : Vars) → (τ : Type) → Scheme
 
 --------------------------------------------------------------------------------
--- Typing Assignments map *type vars* to *type schemes*.
+-- Renamings map variables to variables.
 
-TypeAss : Set
-TypeAss = AssocList Scheme
+Renaming : Set 
+Renaming = AssocList Var
 
 --------------------------------------------------------------------------------
 -- Substitutions map type vars to types.
@@ -57,10 +60,23 @@ Subst : Set
 Subst = AssocList Type
 
 --------------------------------------------------------------------------------
--- Lift a substitution up to a typing assignment.
+-- Typing Assignments map *type vars* to *type schemes*.
 
-lift : Subst → TypeAss
-lift = map §
+TypeAss : Set
+TypeAss = AssocList Scheme
+
+
+--------------------------------------------------------------------------------
+-- Renamings can be promoted trivially to substitutions
+
+sub : Renaming → Subst 
+sub = map `
+
+--------------------------------------------------------------------------------
+-- Substitutions can be promoted trivially to Type Assignments
+
+ass : Subst → TypeAss
+ass = map §
 
 --------------------------------------------------------------------------------
 -- Free type variables in types, schemes, and environments.
@@ -115,43 +131,56 @@ occurs α (τ₁ `→ τ₂) = (occurs α τ₁) ∨ (occurs α τ₂)
 fresh : Vars → Var
 fresh vs = unsafeHead (alphabet ╲ vs)
 
--- Produce the substitution [βᵢ/αᵢ] fresh βᵢ from vars αᵢ.
-freshen : Vars → Subst
+-- Produce the Renaming [βᵢ/αᵢ] fresh βᵢ from vars αᵢ.
+freshen : Vars → Renaming
 freshen as = go as as
   where
     -- "all" accumulates each fresh var we add,
     -- so that we do not produce duplicates.
-    go : Vars → Vars → Subst
+    go : Vars → Vars → Renaming
     go [] all = ∅
-    go (x ∷ xs) all = let β = fresh all in (x ↦ (` β) , (go xs (β ∷ all)))
+    go (x ∷ xs) all = let β = fresh all in (x ↦ β , (go xs (β ∷ all)))
 
 -- Quick test 
-_ : freshen ("x" ∷ "y" ∷ "z" ∷ []) ≡ "x" ↦ ` "a" , "y" ↦ ` "b" , "z" ↦ ` "c" , ∅ 
+_ : freshen ("x" ∷ "y" ∷ "z" ∷ []) ≡ "x" ↦ "a" , "y" ↦ "b" , "z" ↦ "c" , ∅ 
 _ = refl 
 
+-- The problem is here:
+-- We must have 
+--   new Γ ∉ ftv'Γ Γ
+-- where 
+--   ftv'Γ (α ↦ σ , Γ) = dedup (ftv σ ++ (ftv'Γ Γ))
+-- That is, new Γ must be fresh with respect 
+-- to the *codomain* of Γ, not just the domain. 
 new : TypeAss → Type
-new Γ = ` (fresh (dom Γ))
+new Γ = ` (fresh (ftv'Γ Γ))
 
 --------------------------------------------------------------------------------
 -- Substitution.
 
-infixl 2 _[_]
+infixl 2 _[_]β 
 infixl 2 _[_]t
-_[_] : Scheme → Subst → Scheme
+_[_]β : Scheme → Subst → Scheme
 _[_]t : Type → Subst → Type
 
-(§ τ) [ σ ]    = § (τ [ σ ]t)
-(`∀ T τ) [ σ ] = `∀ T (τ [ σ ]t)
+-- Capture avoiding substitution over type schemes
+(§ τ) [ σ ]β    = § (τ [ σ ]t)
+(`∀ T τ) [ σ ]β = let ρ = freshen T in `∀ (cod ρ) ((τ [ sub ρ ]t)  [ σ ]t)
 
 ⊤ [ _ ]t = ⊤
 (` x) [ σ ]t = σ ∋[ x ] (` x)
-(τ `→ τ') [ σ ]t = (τ [ σ ]t) `→ (τ' [ σ ]t)
+(τ₁ `→ τ₂) [ σ ]t = (τ₁ [ σ ]t) `→ (τ₂ [ σ ]t)
+
+-- test for capture avoiding substitution
+_ :   ((`∀ ("α" ∷ "β"  ∷ []) (` "α" `→ ` "β" `→ ` "c")) [ ("α" ↦ ⊤ , "β" ↦ ⊤ , "c" ↦ ⊤ , ∅) ]β) 
+    ≡ (`∀ ("a" ∷ "b"  ∷ []) (` "a" `→ ` "b" `→ ⊤))
+_ = refl 
 
 -- --------------------------------------------------------------------------------
 -- Substitution over typing environments.
 
 _[_]Γ : TypeAss → Subst → TypeAss
-Γ [ σ ]Γ = map (_[ σ ]) Γ
+Γ [ σ ]Γ = map (_[ σ ]β) Γ
 
 --------------------------------------------------------------------------------
 

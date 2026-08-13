@@ -18,6 +18,8 @@ The following are in need of repair.
 
 ## References
 
+- Lee and Yi. Proofs about a Folklore Let-Polymorphic Type Inference Algorithm. 1998.
+  - https://kwangkeunyi.snu.ac.kr/paper/98-toplas-leyi.pdf
 - Robin Milner. A theory of type polymorphism in programming. Journal of
   Computer and System Sciences, pages 348–375, 1978
 - Luis Damas and Robin Milner. Principal type schemes for functional programs.

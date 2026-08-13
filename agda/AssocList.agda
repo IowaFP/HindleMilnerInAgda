@@ -42,10 +42,18 @@ module AList (Key : Set) (_≟_ : Decidable {A = Key} _≡_) where
   ... | no _ =  Γ ∋[ y ] ⊥
 
   --------------------------------------------------------------------------------
-  -- Domain.
+  -- Domain
+  
   dom : ∀ {Val : Set} → AssocList Val → List Key
   dom ∅ = []
-  dom (v ↦ _ , Γ) = v ∷ (dom Γ)
+  dom (k ↦ _ , Γ) = k ∷ (dom Γ)
+
+  --------------------------------------------------------------------------------
+  -- Codomain 
+
+  cod : ∀ {Val : Set} → AssocList Val → List Val
+  cod ∅ = []
+  cod (_ ↦ v , Γ) = v ∷ (cod Γ)
 
   --------------------------------------------------------------------------------
   -- Map from one Val to another.
