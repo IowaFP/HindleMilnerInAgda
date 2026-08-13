@@ -125,6 +125,10 @@ freshen as = go as as
     go [] all = ∅
     go (x ∷ xs) all = let β = fresh all in (x ↦ (` β) , (go xs (β ∷ all)))
 
+-- Quick test 
+_ : freshen ("x" ∷ "y" ∷ "z" ∷ []) ≡ "x" ↦ ` "a" , "y" ↦ ` "b" , "z" ↦ ` "c" , ∅ 
+_ = refl 
+
 new : TypeAss → Type
 new Γ = ` (fresh (dom Γ))
 
@@ -159,7 +163,7 @@ _[_]Γ : TypeAss → Subst → TypeAss
 
 infixr 1 _∘ₛ_
 _∘ₛ_ : Subst → Subst → Subst
-σ₁ ∘ₛ ∅ = σ₁
+σ₁ ∘ₛ ∅ = ∅
 σ₁ ∘ₛ (α ↦ τ  , σ₂) = α ↦ τ [ σ₁ ]t , σ₁ ∘ₛ σ₂ 
 
 -- --------------------------------------------------------------------------------

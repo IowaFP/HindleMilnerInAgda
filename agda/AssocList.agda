@@ -12,6 +12,7 @@ module AList (Key : Set) (_≟_ : Decidable {A = Key} _≡_) where
   --------------------------------------------------------------------------------
   -- Associated lists for typing environments, assignments, and substitutions.
 
+  infixr 5 _↦_,_
   data AssocList (Val : Set)  : Set where
     ∅     : AssocList Val
     _↦_,_ : (k : Key) → (v : Val) → (xs : AssocList Val) → AssocList Val

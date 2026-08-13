@@ -23,8 +23,10 @@ name = id
 print : Scheme → String
 print't : Type → String
 print (§ τ) = print't τ
-print (`∀ T τ) = "∀ {" ++ (intersperse "," (map name T)) ++ "} " ++ print't τ
+print (`∀ T τ) = "∀ {" ++ (intersperse ", " (map name T)) ++ "} " ++ print't τ
 
+_ : print (`∀ ("x" ∷ "y" ∷ []) ⊤) ≡ "∀ {x, y} ⊤"
+_ = refl
 
 print't ⊤ = "⊤"
 print't (` α) = name α
