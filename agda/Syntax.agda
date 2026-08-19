@@ -15,24 +15,20 @@ open AList String _≟_
 -- We used a named representation.
 
 Var = String
+TVar = String
+
 Vars = List Var
+TVars = List TVar
 
 --------------------------------------------------------------------------------
 -- Syntax
 --
--- TODO:
---   - Refactor from ℕ vars to String vars
---   - Add recursive functions / LFP operator.
---   - Add Inductive-recursive definition 
---       _∉ₑ_ : Var → Expr → Set
---       _∉ₑ_ : (x : Var) (e : Expr) → Dec (x ∉ₑ? Expr)
---   - So that we can constrain `λ with {free : True (x ∉ₑ? Expr)}
 
 infixr 5 _·_
 infixr 4 `λ_．_
 data Expr : Set where
   tt    : Expr
-  `    : (x : Var) → Expr
+  `_    : (x : Var) → Expr
   `λ_．_    : (x : Var) → (e : Expr) → Expr
   _·_  : (e₁ : Expr) → (e₂ : Expr) → Expr
   Let_:=_In_ : (x : Var) → (e₁ : Expr) → (e₂ : Expr) → Expr
@@ -40,12 +36,12 @@ data Expr : Set where
 infixr 5 _`→_
 data Type : Set where
   ⊤    : Type
-  `    : (α : Var) → Type
+  `_    : (α : TVar) → Type
   _`→_ : (τ₁ : Type) → (τ₂ : Type) → Type
 
 data Scheme : Set where
   §  : (τ : Type) → Scheme
-  `∀ : (T : Vars) → (τ : Type) → Scheme
+  `∀ : (T : TVars) → (τ : Type) → Scheme
 
 --------------------------------------------------------------------------------
 -- Renamings map variables to variables.
@@ -70,7 +66,7 @@ TypeAss = AssocList Scheme
 -- Renamings can be promoted trivially to substitutions
 
 sub : Renaming → Subst 
-sub = map `
+sub = map `_ 
 
 --------------------------------------------------------------------------------
 -- Substitutions can be promoted trivially to Type Assignments
@@ -79,16 +75,22 @@ ass : Subst → TypeAss
 ass = map §
 
 --------------------------------------------------------------------------------
--- Free type variables in types, schemes, and environments.
+-- Some helpers
 
 -- Set difference.
-_╲_ : List Var → List Var → List Var
+_╲_ : Vars → Vars → Vars
 xs ╲ ys = filter (_∉? ys) xs
 
+-- Removing duplicates 
+dedup : Vars → Vars
 dedup = deduplicate _≟_
 
-ftv : Scheme → Vars
-ftv't : Type → Vars
+--------------------------------------------------------------------------------
+-- Free type variables in types, schemes, and typing assignments.
+
+ftv : Scheme → TVars
+ftv't : Type → TVars
+ftv'Γ : TypeAss → TVars 
 
 ftv (§ τ) = ftv't τ
 ftv (`∀ T τ) = ftv't τ ╲ (dedup T)
@@ -97,9 +99,8 @@ ftv't ⊤ = []
 ftv't (` α) = α ∷ []
 ftv't (τ₁ `→ τ₂) = dedup (ftv't τ₁ ++ ftv't τ₂)
 
-ftv'Γ : TypeAss → Vars
 ftv'Γ ∅ = []
-ftv'Γ (α ↦ σ , Γ) = dedup (ftv σ ++ (ftv'Γ Γ))
+ftv'Γ (α ↦ σ , Γ) = dedup (ftv σ ++ ftv'Γ Γ)
 
 --------------------------------------------------------------------------------
 -- Occurrence.
@@ -145,15 +146,9 @@ freshen as = go as as
 _ : freshen ("x" ∷ "y" ∷ "z" ∷ []) ≡ "x" ↦ "a" , "y" ↦ "b" , "z" ↦ "c" , ∅ 
 _ = refl 
 
--- The problem is here:
--- We must have 
---   new Γ ∉ ftv'Γ Γ
--- where 
---   ftv'Γ (α ↦ σ , Γ) = dedup (ftv σ ++ (ftv'Γ Γ))
--- That is, new Γ must be fresh with respect 
--- to the *codomain* of Γ, not just the domain. 
-new : TypeAss → Type
-new Γ = ` (fresh (ftv'Γ Γ))
+-- Generate a new name
+new : TypeAss → Var
+new Γ = (fresh (ftv'Γ Γ))
 
 --------------------------------------------------------------------------------
 -- Substitution.

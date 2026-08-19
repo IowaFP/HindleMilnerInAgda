@@ -28,7 +28,7 @@ module AList (Key : Set) (_≟_ : Decidable {A = Key} _≡_) where
   v In ∅ = false
   x In (y ↦ σ , Γ) with x ≟ y
   ... | yes _ = true
-  ... | no _ =  false
+  ... | no _ =  x In Γ 
 
   --------------------------------------------------------------------------------
   -- Lookup.
@@ -72,3 +72,15 @@ module AList (Key : Set) (_≟_ : Decidable {A = Key} _≡_) where
   xs ∘' (k ↦ v , ys) with k In xs
   ... | false = (k ↦ v , xs) ∘' ys
   ... | true = xs ∘' ys
+
+--------------------------------------------------------------------------------
+-- AH> Some of this logic is broken... consider:
+module Test where 
+  open import Data.String using (String ; _≟_ ; _==_)                
+  open AList String _≟_
+
+  -- 1. Order is wack 
+  ∘'₁ :   ("x" ↦ "a" , "y" ↦ "b" , ∅) ∘' ("z" ↦ "c" , "x" ↦ "b" , ∅) 
+          ≡ "z" ↦ "c" , "x" ↦ "a" , "y" ↦ "b" , ∅ 
+  ∘'₁ = refl 
+

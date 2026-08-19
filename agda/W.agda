@@ -16,7 +16,7 @@ open AList String _≟_
 ... | § τ    = ∅ , τ
 ... | σ@(`∀ T τ) = ∅ , (τ [ (sub (freshen (T ++ dom Γ))) ]t)
 𝒲 Γ (`λ x ． e) = let
-                 β = new Γ
+                 β = ` new Γ
                  (σ₁ , τ₁) = 𝒲 (x ↦ § β , Γ) e
                in σ₁ , (β [ σ₁ ]t) `→ τ₁ 
 𝒲 Γ (e₁ · e₂) with new Γ | 𝒲 Γ e₁

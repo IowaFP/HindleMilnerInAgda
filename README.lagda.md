@@ -1,22 +1,30 @@
-## Algorithms 𝒲 and ℳ in Agda
+# Algorithms 𝒲 and ℳ in Agda
 Implementation of Hindley-Milner type inference algorithms 𝒲 (Milner 1978) and ℳ (Lee
 and Yi 1998). Available for reference as algorithms.
 
-## Notice of Technical Debt
+## Notices
 
-The following are in need of repair.
+The algorithm is (probably) sound but not strictly safe.
 
-- I use a named representation (with names ∈ ℕ) under the [Barendregt
-  convention](https://cs.stackexchange.com/questions/69323/barendregts-variable-convention-what-does-it-mean).
-  I suspect formalization would not be terribly novel or difficult, but one would
-  first need to switch variable representation to either DeBruijn or locally
-  nameless (see Charguéraud (2012)). I would recommend locally nameless, as
-  algorithms 𝒲 and ℳ require the generation of "new" type variables, which the
+- I use a named variable representation, which is prettier to write but not exactly kosher. In particular:
+  - Variable freshening is unsafe (must be either non-terminating, obtuse, or non-exhaustive)
+  - Have to rename under bindings to avoid variable capture
+  It might be interesting to formalize with a locally nameless representation (see Charguéraud (2012)),
+  as algorithms 𝒲 and ℳ require the generation of "new" type variables, which the
   locally nameless style provides via "atoms".
 - The [unification algorithm](./agda/Unification) is not structurally recursive, and so requires a TERMINATING pragma.
 
+## Todo
+- Refactor to either De Bruijn or locally-nameless. 
+  - May be interesting to have intrinsically-scoped locally nameless syntax. Has anyone tried that?
+- Implement algorithm ℳ. (Woops.)
+- Find a way to make 𝒰 structurally recursive.
+- None of the data are intrinsically verified; might be worthwhile to see if the output can produce
+  an intrinsically-typed derivation.
+- Add recursive functions via a LFP operator.
+- Refactor away from `Vars = List Var` to a Set (avoids uniqueness check).
 
-## References
+# Relevant literature 
 
 - Lee and Yi. Proofs about a Folklore Let-Polymorphic Type Inference Algorithm. 1998.
   - https://kwangkeunyi.snu.ac.kr/paper/98-toplas-leyi.pdf
